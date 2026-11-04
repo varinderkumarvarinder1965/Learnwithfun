@@ -1,0 +1,953 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>Play with Math</title>
+<style>
+  :root {
+    --ink: #334155;
+    --muted: #64748b;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    margin: 0;
+    height: 100%;
+    overflow: hidden;
+    font-family: "Trebuchet MS", "Segoe UI", system-ui, sans-serif;
+    user-select: none;
+    -webkit-user-select: none;
+    color: var(--ink);
+    background: linear-gradient(160deg, #fefce8 0%, #e0f2fe 50%, #dcfce7 100%);
+  }
+  button { font-family: inherit; cursor: pointer; border: none; }
+  .screen {
+    position: absolute;
+    inset: 0;
+    display: none;
+    flex-direction: column;
+    padding: 16px;
+  }
+  .screen.active { display: flex; }
+
+  /* ---------- LOGIN / HOME ---------- */
+  #screen-login, #screen-home {
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    gap: 6px;
+  }
+  .home-art {
+    font-size: clamp(28px, 7vw, 52px);
+    letter-spacing: 6px;
+    margin-bottom: 6px;
+    animation: float 3s ease-in-out infinite;
+  }
+  @keyframes float {
+    0%,100% { transform: translateY(0); }
+    50%     { transform: translateY(-10px); }
+  }
+  h1 {
+    margin: 0;
+    font-size: clamp(26px, 6vw, 46px);
+    letter-spacing: 1px;
+  }
+  .subtitle {
+    margin: 4px 0 18px;
+    color: var(--muted);
+    font-size: clamp(14px, 3vw, 20px);
+    max-width: 480px;
+  }
+  .greeting {
+    margin: 2px 0 0;
+    font-size: clamp(15px, 3.2vw, 20px);
+    font-weight: bold;
+    color: #0ea5e9;
+  }
+  .btn {
+    padding: 14px 26px;
+    border-radius: 16px;
+    font-size: clamp(15px, 3vw, 20px);
+    font-weight: bold;
+    background: #fff;
+    color: var(--ink);
+    box-shadow: 0 6px 0 rgba(0,0,0,.12), 0 8px 16px rgba(0,0,0,.08);
+    transition: transform .08s ease, box-shadow .08s ease;
+  }
+  .btn:active { transform: translateY(3px); box-shadow: 0 3px 0 rgba(0,0,0,.12); }
+  .btn.primary {
+    background: linear-gradient(135deg, #f59e0b, #f97316);
+    color: #fff;
+  }
+  .btn.big {
+    padding: 18px 60px;
+    font-size: clamp(20px, 4.5vw, 30px);
+    border-radius: 22px;
+    background: linear-gradient(135deg, #34d399, #22c55e);
+    color: #fff;
+    box-shadow: 0 8px 0 #15803d, 0 14px 22px rgba(0,0,0,.15);
+  }
+  .btn.big:active { transform: translateY(5px); box-shadow: 0 3px 0 #15803d; }
+  .home-tip {
+    margin-top: 22px;
+    color: var(--muted);
+    font-size: clamp(12px, 2.6vw, 16px);
+  }
+  .link-btn {
+    background: none;
+    border: none;
+    color: var(--muted);
+    font-size: 14px;
+    text-decoration: underline;
+    margin-top: 14px;
+    padding: 6px;
+  }
+  .name-input {
+    width: min(340px, 82vw);
+    padding: 15px 18px;
+    font-size: clamp(18px, 4vw, 24px);
+    text-align: center;
+    font-family: inherit;
+    color: var(--ink);
+    background: #fff;
+    border: 3px solid #cbd5e1;
+    border-radius: 16px;
+    outline: none;
+    box-shadow: 0 6px 14px rgba(0,0,0,.08);
+    margin-bottom: 12px;
+  }
+  .name-input:focus { border-color: #38bdf8; box-shadow: 0 0 0 4px rgba(56,189,248,.25); }
+  .name-input.shake { animation: shake .4s ease; }
+  @keyframes shake {
+    0%,100% { transform: translateX(0); }
+    25%     { transform: translateX(-10px); }
+    50%     { transform: translateX(10px); }
+    75%     { transform: translateX(-6px); }
+  }
+
+  /* ---------- TOPBAR / LEVELS ---------- */
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    width: 100%;
+    max-width: 860px;
+    margin: 0 auto 12px;
+  }
+  .topbar h2 { margin: 0; font-size: clamp(18px, 4vw, 28px); }
+  .btn.icon {
+    width: 52px; height: 52px; padding: 0; border-radius: 14px;
+    font-size: 22px; display: flex; align-items: center; justify-content: center;
+  }
+  .spacer { width: 52px; }
+  .level-grid {
+    width: 100%;
+    max-width: 860px;
+    margin: 0 auto;
+    overflow-y: auto;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 14px;
+    padding: 6px 2px 24px;
+  }
+  .level-card {
+    position: relative;
+    min-height: 128px;
+    border-radius: 20px;
+    background: linear-gradient(160deg, #ffffff, #eef2ff);
+    box-shadow: 0 6px 14px rgba(0,0,0,.1);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    color: var(--ink);
+    transition: transform .12s ease;
+    padding: 12px;
+    text-align: center;
+  }
+  .level-card.unlocked:active { transform: scale(.96); }
+  .level-card .num {
+    font-size: clamp(24px, 5vw, 34px);
+    font-weight: bold;
+    color: #f97316;
+    line-height: 1;
+  }
+  .level-card .lv-name { font-size: clamp(13px, 2.6vw, 15px); font-weight: bold; }
+  .level-card .lv-stars { font-size: 15px; letter-spacing: 2px; }
+  .level-card .lv-label { font-size: 12px; color: var(--muted); }
+  .level-card.locked {
+    background: #e2e8f0;
+    color: #94a3b8;
+    box-shadow: none;
+    cursor: not-allowed;
+  }
+  .level-card.locked .num, .level-card.locked .lv-label { color: #94a3b8; }
+  .level-card.locked .lock { font-size: 34px; }
+
+  /* ---------- GAME ---------- */
+  #screen-game { justify-content: space-between; }
+  .game-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    width: 100%;
+    max-width: 860px;
+    margin: 0 auto;
+  }
+  .game-info { text-align: center; flex: 1; }
+  .game-info .level-name { font-weight: bold; font-size: clamp(15px, 3.2vw, 20px); }
+  .progress-dots {
+    display: flex; gap: 6px; justify-content: center; margin-top: 6px; flex-wrap: wrap;
+  }
+  .dot-item {
+    width: 14px; height: 14px; border-radius: 50%;
+    background: #cbd5e1;
+    transition: background .2s ease, transform .2s ease;
+  }
+  .dot-item.done { background: #22c55e; transform: scale(1.15); }
+  .game-counter {
+    font-weight: bold; font-size: clamp(15px, 3vw, 20px);
+    min-width: 52px; text-align: right;
+  }
+  .hearts {
+    text-align: center;
+    font-size: clamp(18px, 4.2vw, 28px);
+    letter-spacing: 5px;
+    margin-top: 4px;
+    line-height: 1;
+  }
+  .task {
+    text-align: center;
+    margin: 6px auto 0;
+    font-size: clamp(14px, 3vw, 20px);
+    color: var(--muted);
+    min-height: 1.4em;
+  }
+  .task b { color: var(--ink); }
+
+  .question-card {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: clamp(16px, 4vh, 30px);
+    width: 100%;
+  }
+  .question {
+    font-size: clamp(38px, 10vw, 72px);
+    font-weight: bold;
+    color: #1e293b;
+    background: #fff;
+    padding: clamp(14px, 3vw, 24px) clamp(22px, 6vw, 48px);
+    border-radius: 26px;
+    box-shadow: 0 10px 24px rgba(0,0,0,.12);
+    text-align: center;
+    min-width: min(320px, 86vw);
+    animation: qIn .3s ease;
+  }
+  @keyframes qIn {
+    from { transform: scale(.85); opacity: 0; }
+    to   { transform: scale(1); opacity: 1; }
+  }
+  .answers {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(120px, 1fr));
+    gap: clamp(10px, 2.5vw, 18px);
+    width: 100%;
+    max-width: 480px;
+  }
+  .answer {
+    padding: clamp(14px, 3.5vw, 22px) 10px;
+    font-size: clamp(24px, 6vw, 38px);
+    font-weight: bold;
+    border-radius: 18px;
+    background: #fff;
+    color: var(--ink);
+    box-shadow: 0 6px 0 rgba(0,0,0,.12), 0 8px 16px rgba(0,0,0,.08);
+    transition: transform .08s ease, background .15s ease, color .15s ease;
+  }
+  .answer:active { transform: translateY(3px); box-shadow: 0 3px 0 rgba(0,0,0,.12); }
+  .answer.correct { background: #22c55e; color: #fff; }
+  .answer.wrong { background: #ef4444; color: #fff; animation: shake .4s ease; }
+  .answer:disabled { cursor: default; }
+
+  /* ---------- EMOJI / FLASH ---------- */
+  .feedback {
+    position: fixed;
+    left: 50%;
+    top: 40%;
+    transform: translate(-50%, -50%) scale(0);
+    font-size: clamp(80px, 22vw, 170px);
+    line-height: 1;
+    pointer-events: none;
+    z-index: 3500;
+    opacity: 0;
+  }
+  .feedback.show-correct { animation: happyPop .9s ease; }
+  .feedback.show-wrong   { animation: sadPop .9s ease; }
+  @keyframes happyPop {
+    0%   { transform: translate(-50%,-50%) scale(0) rotate(-30deg); opacity: 0; }
+    30%  { transform: translate(-50%,-50%) scale(1.35) rotate(10deg); opacity: 1; }
+    60%  { transform: translate(-50%,-50%) scale(1.05) rotate(-5deg); opacity: 1; }
+    100% { transform: translate(-50%,-50%) scale(1) rotate(0); opacity: 0; }
+  }
+  @keyframes sadPop {
+    0%   { transform: translate(-50%,-50%) scale(0); opacity: 0; }
+    30%  { transform: translate(-50%,-50%) scale(1.15); opacity: 1; }
+    55%  { transform: translate(-50%,-50%) scale(1) translateX(-8px); opacity: 1; }
+    70%  { transform: translate(-50%,-50%) scale(1) translateX(8px); opacity: 1; }
+    100% { transform: translate(-50%,-50%) scale(.9); opacity: 0; }
+  }
+  .flash {
+    position: fixed; inset: 0; background: #fff;
+    opacity: 0; pointer-events: none; z-index: 3400;
+  }
+  .flash.go { animation: flashAnim .55s ease; }
+  @keyframes flashAnim {
+    0% { opacity: 0; }
+    20% { opacity: .8; }
+    100% { opacity: 0; }
+  }
+
+  /* ---------- OVERLAY ---------- */
+  .overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 3000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    background: rgba(15,23,42,.45);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+  }
+  .overlay.hidden { display: none; }
+  .card {
+    background: #fff;
+    border-radius: 28px;
+    padding: clamp(22px, 5vw, 40px);
+    text-align: center;
+    max-width: 440px;
+    width: 100%;
+    box-shadow: 0 24px 48px rgba(0,0,0,.3);
+    animation: cardIn .3s ease;
+  }
+  @keyframes cardIn {
+    from { transform: scale(.8); opacity: 0; }
+    to   { transform: scale(1); opacity: 1; }
+  }
+  .card h2 { margin: 0 0 8px; font-size: clamp(22px, 5vw, 32px); }
+  .stars-big {
+    font-size: clamp(34px, 9vw, 54px);
+    letter-spacing: 4px;
+    margin: 6px 0 10px;
+  }
+  .card p { color: var(--muted); margin: 0 0 20px; font-size: clamp(14px, 3vw, 18px); }
+  .card-buttons {
+    display: flex; flex-wrap: wrap; gap: 10px; justify-content: center;
+  }
+  .fail-emoji { font-size: clamp(50px, 14vw, 80px); line-height: 1; margin-bottom: 6px; }
+
+  #confetti {
+    position: fixed; inset: 0; pointer-events: none; overflow: hidden; z-index: 4000;
+  }
+  .confetti-piece {
+    position: absolute; top: -20px;
+    width: 10px; height: 16px; border-radius: 3px;
+    animation: fall linear forwards;
+  }
+  @keyframes fall {
+    to { transform: translateY(110vh) rotate(720deg); opacity: .9; }
+  }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- LOGIN (fallback when opened without a name) -->
+  <section id="screen-login" class="screen">
+    <div class="home-art">🔢 ➕ ➖</div>
+    <h1>Play with Math</h1>
+    <p class="subtitle">What is your name?</p>
+    <input id="player-name" class="name-input" type="text" maxlength="20" placeholder="Type your name" autocomplete="off" />
+    <button id="btn-login" class="btn big">Start ▶</button>
+  </section>
+
+  <!-- HOME -->
+  <section id="screen-home" class="screen">
+    <div class="home-art">➕ ➖ ✖️ ➗</div>
+    <h1>Play with Math</h1>
+    <p class="greeting" id="home-greeting"></p>
+    <p class="subtitle">Answer fun math questions and clear every level!</p>
+    <button id="btn-play" class="btn big">▶ Play</button>
+    <div class="home-tip">Tap the correct answer. Be careful — you only have 3 hearts!</div>
+    <button id="btn-all-games" class="link-btn">← All Games</button>
+    <button id="btn-change-name" class="link-btn">Not you? Change name</button>
+  </section>
+
+  <!-- LEVEL SELECT -->
+  <section id="screen-levels" class="screen">
+    <div class="topbar">
+      <button class="btn icon" id="btn-levels-home" aria-label="Home">🏠</button>
+      <h2>Choose a Level</h2>
+      <div class="spacer"></div>
+    </div>
+    <div id="level-grid" class="level-grid"></div>
+  </section>
+
+  <!-- GAME -->
+  <section id="screen-game" class="screen">
+    <div class="game-top">
+      <button class="btn icon" id="btn-game-back" aria-label="Back">⬅</button>
+      <div class="game-info">
+        <div class="level-name">Level <span id="game-level">1</span></div>
+        <div class="progress-dots" id="progress-dots"></div>
+      </div>
+      <div class="game-counter"><span id="game-done">0</span>/<span id="game-total">5</span></div>
+    </div>
+
+    <div class="hearts" id="hearts"></div>
+    <div class="task" id="task">Tap the correct answer!</div>
+
+    <div class="question-card">
+      <div class="question" id="question">7 + 5 = ?</div>
+      <div class="answers" id="answers"></div>
+    </div>
+  </section>
+
+  <!-- LEVEL COMPLETE OVERLAY -->
+  <div id="overlay-complete" class="overlay hidden">
+    <div class="card">
+      <h2 id="complete-title">Level 1 Complete!</h2>
+      <div class="stars-big" id="complete-stars">⭐⭐⭐</div>
+      <p id="complete-msg">Great job!</p>
+      <div class="card-buttons">
+        <button class="btn" id="btn-replay">🔄 Replay</button>
+        <button class="btn primary" id="btn-next">Next Level ▶</button>
+        <button class="btn" id="btn-levels">📋 Levels</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- LEVEL FAILED OVERLAY -->
+  <div id="overlay-fail" class="overlay hidden">
+    <div class="card">
+      <div class="fail-emoji">😢</div>
+      <h2>Level Failed</h2>
+      <p id="fail-msg">Too many wrong answers. Let's try again!</p>
+      <div class="card-buttons">
+        <button class="btn primary" id="btn-try-again">Try Again 🔄</button>
+        <button class="btn" id="btn-fail-levels">📋 Levels</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="feedback" class="feedback" aria-hidden="true"></div>
+  <div id="flash" class="flash"></div>
+  <div id="confetti"></div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  /* ---------------- Math level definitions ---------------- */
+
+  const LEVELS = [
+    { name: "Add to 10",    sub: "Easy addition",        count: 5, gen: function () { return genAdd(10); } },
+    { name: "Take Away 10", sub: "Easy subtraction",     count: 5, gen: function () { return genSub(10); } },
+    { name: "Add to 20",    sub: "Bigger addition",      count: 5, gen: function () { return genAdd(20); } },
+    { name: "Take Away 20", sub: "Bigger subtraction",   count: 5, gen: function () { return genSub(20); } },
+    { name: "Mix + and −",  sub: "Add & subtract to 20", count: 6, gen: function () { return randInt(0, 1) ? genAdd(20) : genSub(20); } },
+    { name: "Add to 50",    sub: "Big sums",             count: 6, gen: function () { return genAdd(50); } },
+    { name: "Take Away 50", sub: "Big subtraction",      count: 6, gen: function () { return genSub(50); } },
+    { name: "Times 1–5",    sub: "Easy multiplication",  count: 6, gen: function () { return genMul(5); } },
+    { name: "Times 1–10",   sub: "Times tables",         count: 6, gen: function () { return genMul(10); } },
+    { name: "Divide",       sub: "Exact division",       count: 6, gen: function () { return genDiv(10); } },
+    { name: "Mix × and ÷",  sub: "Multiply & divide",    count: 7, gen: function () { return randInt(0, 1) ? genMul(10) : genDiv(10); } },
+    { name: "Math Master",  sub: "Everything mixed",     count: 8, gen: function () { return genMaster(); } }
+  ];
+
+  /* ---------------- Random question generators ---------------- */
+
+  function randInt(min, max) {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+  }
+  function genAdd(max) {
+    const a = randInt(1, max - 1);
+    const b = randInt(1, max - a);
+    return { text: a + " + " + b + " = ?", answer: a + b };
+  }
+  function genSub(max) {
+    const a = randInt(2, max);
+    const b = randInt(1, a);
+    return { text: a + " − " + b + " = ?", answer: a - b };
+  }
+  function genMul(table) {
+    const a = randInt(1, table);
+    const b = randInt(1, 10);
+    return { text: a + " × " + b + " = ?", answer: a * b };
+  }
+  function genDiv(table) {
+    const b = randInt(1, table);
+    const ans = randInt(1, 10);
+    const a = b * ans;
+    return { text: a + " ÷ " + b + " = ?", answer: ans };
+  }
+  function genMaster() {
+    const pick = randInt(0, 3);
+    if (pick === 0) return genAdd(50);
+    if (pick === 1) return genSub(50);
+    if (pick === 2) return genMul(10);
+    return genDiv(10);
+  }
+
+  function shuffle(arr) {
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = randInt(0, i);
+      const t = arr[i]; arr[i] = arr[j]; arr[j] = t;
+    }
+    return arr;
+  }
+
+  function makeChoices(answer) {
+    const set = [answer];
+    const spread = Math.max(4, Math.ceil(Math.abs(answer) * 0.25));
+    let guard = 0;
+    while (set.length < 4 && guard < 300) {
+      guard++;
+      const delta = randInt(-spread, spread);
+      if (delta === 0) continue;
+      const v = answer + delta;
+      if (v < 0) continue;
+      if (set.indexOf(v) === -1) set.push(v);
+    }
+    let n = answer + 1;
+    while (set.length < 4) {
+      if (set.indexOf(n) === -1) set.push(n);
+      n++;
+    }
+    return shuffle(set);
+  }
+
+  /* ---------------- Elements ---------------- */
+
+  const screens = {
+    login:  document.getElementById("screen-login"),
+    home:   document.getElementById("screen-home"),
+    levels: document.getElementById("screen-levels"),
+    game:   document.getElementById("screen-game")
+  };
+  const levelGrid   = document.getElementById("level-grid");
+  const answersEl   = document.getElementById("answers");
+  const questionEl  = document.getElementById("question");
+  const taskEl      = document.getElementById("task");
+  const dotsEl      = document.getElementById("progress-dots");
+  const heartsEl    = document.getElementById("hearts");
+  const gameLevelEl = document.getElementById("game-level");
+  const gameDoneEl  = document.getElementById("game-done");
+  const gameTotalEl = document.getElementById("game-total");
+  const overlay     = document.getElementById("overlay-complete");
+  const completeTitle = document.getElementById("complete-title");
+  const completeStars = document.getElementById("complete-stars");
+  const completeMsg   = document.getElementById("complete-msg");
+  const btnNext       = document.getElementById("btn-next");
+  const overlayFail   = document.getElementById("overlay-fail");
+  const failMsgEl     = document.getElementById("fail-msg");
+  const loginNameInput = document.getElementById("player-name");
+  const homeGreeting   = document.getElementById("home-greeting");
+  const feedbackEl     = document.getElementById("feedback");
+  const flashEl        = document.getElementById("flash");
+  const confettiEl     = document.getElementById("confetti");
+
+  /* ---------------- Name ---------------- */
+
+  const NAME_KEY = "color-shape-sorter-player";
+  let playerName = "";
+  function loadName() {
+    try { playerName = localStorage.getItem(NAME_KEY) || ""; } catch (e) {}
+  }
+  function saveName(name) {
+    playerName = name;
+    try { localStorage.setItem(NAME_KEY, name); } catch (e) {}
+  }
+  loadName();
+
+  /* ---------------- Session progress ---------------- */
+
+  let progress = { unlocked: 1, stars: {} };
+
+  const DEFAULT_MAX_WRONG = 3;
+  function maxWrongFor(i) {
+    return LEVELS[i].maxWrong || DEFAULT_MAX_WRONG;
+  }
+
+  /* ---------------- Sound ---------------- */
+
+  let audioCtx = null;
+  function getAudio() {
+    if (!audioCtx) {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (AC) audioCtx = new AC();
+    }
+    if (audioCtx && audioCtx.state === "suspended") audioCtx.resume();
+    return audioCtx;
+  }
+  function beep(freq, start, dur, type, vol) {
+    const ctx = getAudio();
+    if (!ctx) return;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = type || "sine";
+    osc.frequency.value = freq;
+    const t = ctx.currentTime + start;
+    gain.gain.setValueAtTime(0.0001, t);
+    gain.gain.exponentialRampToValueAtTime(vol || 0.18, t + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    osc.connect(gain).connect(ctx.destination);
+    osc.start(t);
+    osc.stop(t + dur + 0.05);
+  }
+  function soundCorrect() {
+    beep(523.25, 0, 0.15); beep(659.25, 0.1, 0.15); beep(783.99, 0.2, 0.22);
+  }
+  function soundWrong() {
+    beep(180, 0, 0.22, "sawtooth", 0.12);
+    beep(120, 0.12, 0.25, "sawtooth", 0.12);
+  }
+  function soundWin() {
+    [523.25, 659.25, 783.99, 1046.5].forEach(function (f, i) {
+      beep(f, i * 0.12, 0.3, "triangle", 0.18);
+    });
+  }
+  function soundFail() {
+    beep(392, 0, 0.2, "sawtooth", 0.14);
+    beep(311.13, 0.16, 0.25, "sawtooth", 0.14);
+    beep(233.08, 0.34, 0.4, "sawtooth", 0.14);
+  }
+
+  const HAPPY_EMOJI = ["😄", "😁", "🤩", "😊", "🥳"];
+  const SAD_EMOJI   = ["😢", "😟", "☹️", "😞"];
+  function showEmoji(isCorrect) {
+    const list = isCorrect ? HAPPY_EMOJI : SAD_EMOJI;
+    feedbackEl.textContent = list[randInt(0, list.length - 1)];
+    feedbackEl.className = "feedback";
+    void feedbackEl.offsetWidth;
+    feedbackEl.classList.add(isCorrect ? "show-correct" : "show-wrong");
+    if (isCorrect) {
+      flashEl.classList.remove("go");
+      void flashEl.offsetWidth;
+      flashEl.classList.add("go");
+    }
+  }
+
+  function confetti() {
+    const colors = ["#ef4444", "#3b82f6", "#f59e0b", "#22c55e", "#a855f7", "#ec4899", "#f97316"];
+    for (let i = 0; i < 60; i++) {
+      const p = document.createElement("div");
+      p.className = "confetti-piece";
+      p.style.left = Math.random() * 100 + "vw";
+      p.style.background = colors[randInt(0, colors.length - 1)];
+      p.style.animationDuration = (1.6 + Math.random() * 1.7) + "s";
+      p.style.animationDelay = (Math.random() * 0.5) + "s";
+      p.style.transform = "rotate(" + Math.random() * 360 + "deg)";
+      confettiEl.appendChild(p);
+      setTimeout(function () { p.remove(); }, 4400);
+    }
+  }
+
+  /* ---------------- Navigation ---------------- */
+
+  function showScreen(name) {
+    Object.keys(screens).forEach(function (k) {
+      screens[k].classList.toggle("active", k === name);
+    });
+  }
+
+  /* ---------------- Level select ---------------- */
+
+  function renderLevels() {
+    levelGrid.innerHTML = "";
+    LEVELS.forEach(function (cfg, i) {
+      const levelNo = i + 1;
+      const unlocked = levelNo <= progress.unlocked;
+      const stars = progress.stars[levelNo] || 0;
+
+      const card = document.createElement("button");
+      card.className = "level-card " + (unlocked ? "unlocked" : "locked");
+      card.disabled = !unlocked;
+
+      if (unlocked) {
+        card.innerHTML =
+          '<div class="num">' + levelNo + '</div>' +
+          '<div class="lv-name">' + cfg.name + '</div>' +
+          '<div class="lv-stars">' + "⭐".repeat(stars) + "☆".repeat(3 - stars) + '</div>' +
+          '<div class="lv-label">' + cfg.count + ' questions</div>';
+        card.addEventListener("click", function () {
+          getAudio();
+          startLevel(i);
+        });
+      } else {
+        card.innerHTML =
+          '<div class="lock">🔒</div>' +
+          '<div class="lv-name">' + cfg.name + '</div>' +
+          '<div class="lv-label">Level ' + levelNo + '</div>';
+      }
+      levelGrid.appendChild(card);
+    });
+  }
+
+  /* ---------------- Game state ---------------- */
+
+  let state = { level: 0, answered: 0, mistakes: 0, current: null, busy: false };
+  let lastText = "";
+
+  function startLevel(index) {
+    state.level = index;
+    state.answered = 0;
+    state.mistakes = 0;
+    state.current = null;
+    state.busy = false;
+    lastText = "";
+
+    const cfg = LEVELS[index];
+    gameLevelEl.textContent = index + 1;
+    gameDoneEl.textContent = "0";
+    gameTotalEl.textContent = cfg.count;
+
+    buildDots(cfg.count);
+    renderHearts();
+    taskEl.textContent = "Tap the correct answer!";
+
+    showScreen("game");
+    nextQuestion();
+  }
+
+  function buildDots(n) {
+    dotsEl.innerHTML = "";
+    for (let i = 0; i < n; i++) {
+      const d = document.createElement("span");
+      d.className = "dot-item";
+      dotsEl.appendChild(d);
+    }
+  }
+  function updateDots() {
+    const items = dotsEl.children;
+    for (let i = 0; i < items.length; i++) {
+      items[i].classList.toggle("done", i < state.answered);
+    }
+    gameDoneEl.textContent = state.answered;
+  }
+  function renderHearts() {
+    const max = maxWrongFor(state.level);
+    const left = Math.max(0, max - state.mistakes);
+    heartsEl.textContent = "❤️".repeat(left) + "🖤".repeat(max - left);
+  }
+
+  function nextQuestion() {
+    const cfg = LEVELS[state.level];
+    if (state.answered >= cfg.count) {
+      completeLevel();
+      return;
+    }
+
+    let q, guard = 0;
+    do {
+      q = cfg.gen();
+      guard++;
+    } while (q.text === lastText && guard < 15);
+    lastText = q.text;
+    state.current = q;
+
+    questionEl.textContent = q.text;
+    questionEl.style.animation = "none";
+    void questionEl.offsetWidth;
+    questionEl.style.animation = "";
+
+    answersEl.innerHTML = "";
+    makeChoices(q.answer).forEach(function (val) {
+      const b = document.createElement("button");
+      b.className = "answer";
+      b.textContent = val;
+      b.dataset.value = val;
+      b.addEventListener("click", function () { onAnswer(b, val); });
+      answersEl.appendChild(b);
+    });
+
+    taskEl.textContent = "Tap the correct answer!";
+    updateDots();
+    state.busy = false;
+  }
+
+  function onAnswer(btn, val) {
+    if (state.busy || btn.disabled) return;
+    const q = state.current;
+    if (!q) return;
+
+    if (val === q.answer) {
+      state.busy = true;
+      btn.classList.add("correct");
+      Array.prototype.forEach.call(answersEl.children, function (b) { b.disabled = true; });
+      soundCorrect();
+      showEmoji(true);
+      state.answered++;
+      updateDots();
+      taskEl.textContent = "Correct! Great job! 🎉";
+
+      setTimeout(function () {
+        nextQuestion();
+      }, 750);
+    } else {
+      btn.classList.add("wrong");
+      btn.disabled = true;
+      soundWrong();
+      showEmoji(false);
+      state.mistakes++;
+      renderHearts();
+      taskEl.textContent = "Oops! Try again. 🙂";
+
+      if (state.mistakes >= maxWrongFor(state.level)) {
+        state.busy = true;
+        setTimeout(function () { failLevel(); }, 800);
+      }
+    }
+  }
+
+  function failLevel() {
+    soundFail();
+    showEmoji(false);
+    failMsgEl.textContent =
+      "You answered wrongly " + maxWrongFor(state.level) + " times. Let's try this level again!";
+    overlayFail.classList.remove("hidden");
+    state.busy = true;
+  }
+
+  function completeLevel() {
+    const levelNo = state.level + 1;
+    const stars = Math.max(1, 3 - state.mistakes);
+
+    if (!progress.stars[levelNo] || stars > progress.stars[levelNo]) {
+      progress.stars[levelNo] = stars;
+    }
+    if (levelNo < LEVELS.length) {
+      progress.unlocked = Math.max(progress.unlocked, levelNo + 1);
+    }
+
+    completeTitle.textContent = "Level " + levelNo + " Complete!";
+    completeStars.textContent = "⭐".repeat(stars) + "☆".repeat(3 - stars);
+    completeMsg.textContent =
+      stars === 3 ? "Perfect! All answers correct! 🎉" :
+      stars === 2 ? "Well done! Keep going for 3 stars!" :
+                    "Good job! Try again for more stars.";
+
+    if (levelNo < LEVELS.length) {
+      btnNext.textContent = "Next Level ▶";
+      btnNext.dataset.action = "next";
+    } else {
+      btnNext.textContent = "Finish 🎊";
+      btnNext.dataset.action = "finish";
+    }
+
+    overlay.classList.remove("hidden");
+    soundWin();
+    confetti();
+    state.busy = true;
+  }
+
+  /* ---------------- Buttons ---------------- */
+
+  function doLogin() {
+    const name = loginNameInput.value.trim();
+    if (!name) {
+      loginNameInput.classList.add("shake");
+      setTimeout(function () { loginNameInput.classList.remove("shake"); }, 450);
+      loginNameInput.focus();
+      return;
+    }
+    saveName(name);
+    homeGreeting.textContent = "Hi, " + name + "! 👋";
+    getAudio();
+    showScreen("home");
+  }
+
+  document.getElementById("btn-login").addEventListener("click", doLogin);
+  loginNameInput.addEventListener("keydown", function (e) {
+    if (e.key === "Enter") { e.preventDefault(); doLogin(); }
+  });
+
+  document.getElementById("btn-change-name").addEventListener("click", function () {
+    loginNameInput.value = playerName || "";
+    showScreen("login");
+    setTimeout(function () { loginNameInput.focus(); }, 120);
+  });
+  document.getElementById("btn-all-games").addEventListener("click", function () {
+    location.href = "../index.html";
+  });
+
+  document.getElementById("btn-play").addEventListener("click", function () {
+    getAudio();
+    renderLevels();
+    showScreen("levels");
+  });
+  document.getElementById("btn-levels-home").addEventListener("click", function () {
+    showScreen("home");
+  });
+  document.getElementById("btn-game-back").addEventListener("click", function () {
+    renderLevels();
+    showScreen("levels");
+  });
+
+  document.getElementById("btn-replay").addEventListener("click", function () {
+    overlay.classList.add("hidden");
+    startLevel(state.level);
+  });
+  btnNext.addEventListener("click", function () {
+    overlay.classList.add("hidden");
+    if (btnNext.dataset.action === "next") {
+      startLevel(state.level + 1);
+    } else {
+      renderLevels();
+      showScreen("levels");
+    }
+  });
+  document.getElementById("btn-levels").addEventListener("click", function () {
+    overlay.classList.add("hidden");
+    renderLevels();
+    showScreen("levels");
+  });
+
+  document.getElementById("btn-try-again").addEventListener("click", function () {
+    overlayFail.classList.add("hidden");
+    startLevel(state.level);
+  });
+  document.getElementById("btn-fail-levels").addEventListener("click", function () {
+    overlayFail.classList.add("hidden");
+    renderLevels();
+    showScreen("levels");
+  });
+
+  /* ---------------- Init ---------------- */
+
+  renderLevels();
+
+  const urlName = new URLSearchParams(location.search).get("name");
+  if (urlName) saveName(urlName);
+
+  loginNameInput.value = playerName || "";
+  if (playerName) homeGreeting.textContent = "Hi, " + playerName + "! 👋";
+
+  if (playerName) {
+    showScreen("home");
+  } else {
+    showScreen("login");
+    setTimeout(function () { loginNameInput.focus(); }, 200);
+  }
+})();
+</script>
+</body>
+</html>
